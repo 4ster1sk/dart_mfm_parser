@@ -169,7 +169,11 @@ class Language {
           }
 
           final contentParser = nest(fullParser).many(0);
+          // 別の文字列をパースするので、manyMemo のメモが混ざらないよう差し替える
+          final outerMemo = state.manyMemo;
+          state.manyMemo = {};
           result = contentParser.handler(contents.join("\n"), 0, state);
+          state.manyMemo = outerMemo;
 
           if (!result.success) {
             return result;
@@ -191,7 +195,7 @@ class Language {
             notMatch(seq([newLine, mark, lineEnd])),
             char
           ], select: 1)
-              .many(1),
+              .manyMemo(1),
           newLine,
           mark,
           lineEnd,
@@ -216,7 +220,7 @@ class Language {
             notMatch(seq([newLine.option(), close])),
             char
           ], select: 1)
-              .many(1),
+              .manyMemo(1),
           newLine.option(),
           close,
           lineEnd,
@@ -239,7 +243,7 @@ class Language {
             notMatch(seq([newLine.option(), close])),
             nest(inline)
           ], select: 1)
-              .many(1),
+              .manyMemo(1),
           newLine.option(),
           close,
           lineEnd,
@@ -413,7 +417,7 @@ class Language {
             notMatch(seq([newLine.option(), close])),
             char
           ], select: 1)
-              .many(1)
+              .manyMemo(1)
               .text(),
           newLine.option(),
           close
@@ -498,7 +502,7 @@ class Language {
             notMatch(alt([close, newLine])),
             char
           ], select: 1)
-              .many(1),
+              .manyMemo(1),
           close
         ]).map((result) => MfmMathInline(formula: result[1].join("")));
       },
@@ -650,7 +654,7 @@ class Language {
             notMatch(alt([closeLabel, newLine])),
             nest(labelInline),
           ], select: 1)
-              .many(1),
+              .manyMemo(1),
           closeLabel,
           str('('),
           alt([urlAlt, urlNoFallback]),

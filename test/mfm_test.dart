@@ -1496,4 +1496,52 @@ after""";
       expect(parse(input), orderedEquals(output));
     });
   });
+
+  // 閉じの無い構文を大量に並べても、パース時間が入力長に比例する（O(n²) にならない）こと。
+  // 修正前は `[` × 2000 で約 7 秒、`<center>\n` × 1000 で約 40 秒かかっていた。
+  group("unclosed syntax is parsed in linear time", () {
+    const limit = Duration(seconds: 2);
+
+    void expectFast(String input, List<MfmNode> output) {
+      final sw = Stopwatch()..start();
+      final result = parse(input);
+      sw.stop();
+      expect(result, orderedEquals(output));
+      expect(sw.elapsed, lessThan(limit));
+    }
+
+    test("link label", () {
+      expectFast("[" * 20000, [MfmText("[" * 20000)]);
+      expectFast("?[" * 10000, [MfmText("?[" * 10000)]);
+    });
+
+    test("link label with close bracket at the end", () {
+      expectFast("[" * 20000 + "]", [MfmText("[" * 20000 + "]")]);
+    });
+
+    test("link label that finally succeeds", () {
+      expectFast("[" * 20000 + "](https://example.com)", [
+        MfmLink(
+            silent: false,
+            url: "https://example.com",
+            children: [MfmText("[" * 19999)]),
+      ]);
+    });
+
+    test("center", () {
+      expectFast("<center>\n" * 2000, [MfmText("<center>\n" * 2000)]);
+    });
+
+    test("plain", () {
+      expectFast("<plain>" * 3000, [MfmText("<plain>" * 3000)]);
+    });
+
+    test("math block", () {
+      expectFast("\\[\n" * 6000, [MfmText("\\[\n" * 6000)]);
+    });
+
+    test("math inline", () {
+      expectFast("\\(" * 10000, [MfmText("\\(" * 10000)]);
+    });
+  });
 }

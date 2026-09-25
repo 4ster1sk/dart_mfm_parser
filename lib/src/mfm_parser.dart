@@ -44,6 +44,10 @@ class FullParserOpts {
   bool linkLabel;
   bool trace;
 
+  /// [Parser.manyMemo] のメモ表。キーは `(要素パーサ, depth, linkLabel)`、値は開始位置ごとの結果。
+  /// 1 つの入力文字列に対してだけ有効なので、別の文字列をパースするときは差し替える。
+  Map<ManyMemoKey, Map<int, ManyMemoEntry>> manyMemo = {};
+
   FullParserOpts(
       {required this.nestLimit,
       required this.depth,
